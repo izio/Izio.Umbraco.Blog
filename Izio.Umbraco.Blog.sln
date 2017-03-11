@@ -5,7 +5,12 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Izio.Umbraco.Blog", "Izio.Umbraco.Blog\Izio.Umbraco.Blog.csproj", "{0D74C297-8187-4D17-BE50-85ED33880D1E}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Izio.Umbraco.Blog.Packaging", "Izio.Umbraco.Blog.Packaging\Izio.Umbraco.Blog.Packaging.shproj", "{E22EE0AE-94C7-44C3-8F3E-A66459ECBF98}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Izio.Umbraco.Blog.Packaging\Izio.Umbraco.Blog.Packaging.projitems*{e22ee0ae-94c7-44c3-8f3e-a66459ecbf98}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

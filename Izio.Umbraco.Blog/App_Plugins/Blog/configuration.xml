@@ -1,0 +1,603 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+  <Version>1.0</Version>
+  <Templates>
+    <Template>
+      <Name>Article</Name>
+      <Alias>Article</Alias>
+      <Content>
+        <![CDATA[
+@inherits Umbraco.Web.Mvc.UmbracoTemplatePage
+@using Izio.Umbraco.Blog
+
+@section Scripts
+{
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES * * */
+        // Required: on line below, replace text in quotes with your forum shortname
+        var disqus_shortname = 'xxx';
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function () {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <script src="//code.jquery.com/jquery-latest.js"></script>
+  <script src="//cdn.rawgit.com/noelboss/featherlight/1.7.1/release/featherlight.min.js" type="text/javascript" charset="utf-8"></script>
+}
+
+<div id="introduction">
+    <div class="row">
+        <div class="twelve columns">
+            @Umbraco.Field("Introduction")
+        </div>
+    </div>
+</div>
+<div id="content">
+    <div class="row">
+        <div class="twelve columns">
+            <div class="article">
+                <h1 class="title">@CurrentPage.Name</h1>
+                @BlogHelper.GetTags(CurrentPage)
+                @Umbraco.Field("Content")
+                @Umbraco.RenderMacro("ArticleNavigation")
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+            </div>
+        </div>
+    </div>
+</div>]]>
+      </Content>
+      <MasterTemplateAlias></MasterTemplateAlias>
+    </Template>
+    <Template>
+      <Name>Article Collection</Name>
+      <Alias>ArticleCollection</Alias>
+      <Content>
+        <![CDATA[
+@inherits Umbraco.Web.Mvc.UmbracoTemplatePage
+@using Izio.Umbraco.Blog
+@{
+
+    int page;
+
+    if (!int.TryParse(Request.QueryString["page"], out page))
+    {
+        page = 1;
+    }
+    
+    var tag = Request.QueryString["tag"] ?? "";
+    var pageSize = CurrentPage.GetPropertyValue<Int32>("PageSize");
+    //var articles = CurrentPage.Descendants("Article").Where(" string.IsNullOrEmpty(@0) || (Tags != null && Tags.Split(',').Any(t => t.Trim() == @0))", tag).OrderBy("CreateDate desc");
+    var articles = CurrentPage.Descendants("Article").Where(" string.IsNullOrEmpty(@0) || Tags.Contains(@0)", tag).OrderBy("CreateDate desc");
+    var totalArticles = articles.Count();
+    var totalPages = (int)Math.Ceiling((double)totalArticles / (double)pageSize);
+
+    if (page > totalPages)
+    {
+        page = totalPages;
+    }
+    else if (page < 1)
+    {
+        page = 1;
+    }
+
+    <div id="content">
+        <div class="row">
+            <div class="twelve columns">
+                <div class="articles">
+                    <ul class="list">
+                        @foreach (var article in articles.Skip((page - 1) * pageSize).Take(pageSize))
+                        {
+                            <li class="article">
+                                <h1 class="title">
+                                    <a href="@article.Url" title="@article.Name">@article.Name</a>
+                                </h1>
+
+                                @BlogHelper.GetTags(article)
+
+                                @article.Introduction
+                            </li>
+                        }
+                    </ul>
+
+                    <ul class="paging">
+                        @for (var p = 1; p < totalPages + 1; p++)
+                        {
+                            if (p == page)
+                            {
+                                <li class="current"><a href="?page=@p&tag=@tag" title="go to page @p">@p</a></li>
+                            }
+                            else
+                            {
+                                <li><a href="?page=@p&tag=@tag" title="go to page @p">@p</a></li>
+                            }
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+}]]>
+      </Content>
+      <MasterTemplateAlias></MasterTemplateAlias>
+    </Template>
+  </Templates>
+  <ContentTypes>
+    <ContentType>
+      <Name>Article Collection</Name>
+      <Alias>ArticleCollection</Alias>
+      <Description></Description>
+      <AllowedAsRoot>True</AllowedAsRoot>
+      <Thumbnail>folder.png</Thumbnail>
+      <Icon>icon-newspaper-alt</Icon>
+      <DefaultTemplate>ArticleCollection</DefaultTemplate>
+      <AllowedContentTypes>Article</AllowedContentTypes>
+      <AllowedTemplates>ArticleCollection</AllowedTemplates>
+      <ContentTypeComposition></ContentTypeComposition>
+      <IsContainer>False</IsContainer>
+      <Properties>
+        <Property>
+          <Name>Keywords</Name>
+          <Alias>Keywords</Alias>
+          <Description>Metadata keywords</Description>
+          <ValidationExpression></ValidationExpression>
+          <Mandatory>False</Mandatory>
+          <Type>Umbraco.Textbox</Type>
+          <Group>Metadata</Group>
+        </Property>
+        <Property>
+          <Name>Description</Name>
+          <Alias>Description</Alias>
+          <Description>Metadata description</Description>
+          <ValidationExpression></ValidationExpression>
+          <Mandatory>False</Mandatory>
+          <Type>Umbraco.TextboxMultiple</Type>
+          <Group>Metadata</Group>
+        </Property>
+        <Property>
+          <Name>Content</Name>
+          <Alias>Content</Alias>
+          <Description>The content to the article</Description>
+          <Mandatory>True</Mandatory>
+          <ValidationExpression></ValidationExpression>
+          <Type>Umbraco.TinyMCEv3</Type>
+          <Group>Content</Group>
+        </Property>
+        <Property>
+          <Name>Page Size</Name>
+          <Alias>PageSize</Alias>
+          <Description>The number of child articles to show per page</Description>
+          <Mandatory>True</Mandatory>
+          <ValidationExpression>^\d+$</ValidationExpression>
+          <Type>Umbraco.Integer</Type>
+          <Group>Settings</Group>
+        </Property>
+      </Properties>
+    </ContentType>
+    <ContentType>
+      <Name>Article</Name>
+      <Alias>Article</Alias>
+      <Description></Description>
+      <AllowedAsRoot>False</AllowedAsRoot>
+      <Thumbnail>folder.png</Thumbnail>
+      <Icon>icon-article</Icon>
+      <DefaultTemplate>Article</DefaultTemplate>
+      <AllowedContentTypes></AllowedContentTypes>
+      <AllowedTemplates>Article</AllowedTemplates>
+      <ContentTypeComposition></ContentTypeComposition>
+      <IsContainer>False</IsContainer>
+      <Properties>
+        <Property>
+          <Name>Keywords</Name>
+          <Alias>Keywords</Alias>
+          <Description>Metadata keywords</Description>
+          <ValidationExpression></ValidationExpression>
+          <Mandatory>False</Mandatory>
+          <Type>Umbraco.Textbox</Type>
+          <Group>Metadata</Group>
+        </Property>
+        <Property>
+          <Name>Description</Name>
+          <Alias>Description</Alias>
+          <Description>Metadata description</Description>
+          <ValidationExpression></ValidationExpression>
+          <Mandatory>False</Mandatory>
+          <Type>Umbraco.TextboxMultiple</Type>
+          <Group>Metadata</Group>
+        </Property>
+        <Property>
+          <Name>Introduction</Name>
+          <Alias>Introduction</Alias>
+          <Description>The introduction to the article</Description>
+          <ValidationExpression></ValidationExpression>
+          <Mandatory>True</Mandatory>
+          <Type>Umbraco.TinyMCEv3</Type>
+          <Group>Content</Group>
+        </Property>
+        <Property>
+          <Name>Content</Name>
+          <Alias>Content</Alias>
+          <Description>The content to the article</Description>
+          <Mandatory>True</Mandatory>
+          <ValidationExpression></ValidationExpression>
+          <Type>Umbraco.TinyMCEv3</Type>
+          <Group>Content</Group>
+        </Property>
+        <Property>
+          <Name>Tags</Name>
+          <Alias>Tags</Alias>
+          <Description>The tags related to the article</Description>
+          <Mandatory>False</Mandatory>
+          <ValidationExpression></ValidationExpression>
+          <Type>Umbraco.Textbox</Type>
+          <Group>Content</Group>
+        </Property>
+        <Property>
+          <Name>Image Folder</Name>
+          <Alias>ImageFolder</Alias>
+          <Description>The media folder for the image gallery</Description>
+          <Mandatory>False</Mandatory>
+          <ValidationExpression></ValidationExpression>
+          <Type>Umbraco.MultipleMediaPicker</Type>
+          <Group>Gallery</Group>
+        </Property>
+        <Property>
+          <Name>Thumbnail Size</Name>
+          <Alias>ThumbnailSize</Alias>
+          <Description>The maximum size for the image thumbnails</Description>
+          <Mandatory>False</Mandatory>
+          <ValidationExpression>^\d+$</ValidationExpression>
+          <Type>Umbraco.Integer</Type>
+          <Group>Gallery</Group>
+        </Property>
+        <Property>
+          <Name>Image Size</Name>
+          <Alias>ImageSize</Alias>
+          <Description>The maximum image size</Description>
+          <Mandatory>False</Mandatory>
+          <ValidationExpression>^\d+$</ValidationExpression>
+          <Type>Umbraco.Integer</Type>
+          <Group>Gallery</Group>
+        </Property>
+      </Properties>
+    </ContentType>
+  </ContentTypes>
+  <PartialViews>
+    <PartialView>
+      <Path>LatestArticles.cshtml</Path>
+      <Content>
+        <![CDATA[
+@inherits Umbraco.Web.Macros.PartialViewMacroPage
+@using Izio.Umbraco.Blog.Helpers
+
+@{	
+    var root = (string.IsNullOrEmpty(((string)Model.MacroParameters["Root"])) || Model.MacroParameters["Root"].ToString() == "null") ? CurrentPage.Site().Id : Model.MacroParameters["Root"].ToString();
+    var limit = (string.IsNullOrEmpty(((string)Model.MacroParameters["Limit"])) || Model.MacroParameters["Limit"].ToString() == "null") ? 10 : Convert.ToInt32(Model.MacroParameters["Limit"]);
+    var cssClass = (string.IsNullOrEmpty(((string)Model.MacroParameters["CssClass"])) || Model.MacroParameters["CssClass"].ToString() == "null") ? "articles" : Model.MacroParameters["CssClass"].ToString();
+    var tagPage = (string.IsNullOrEmpty(((string)Model.MacroParameters["TagPage"])) || Model.MacroParameters["TagPage"].ToString() == "null") ? null : Umbraco.Content(Model.MacroParameters["TagPage"].ToString());
+		var articles = Umbraco.Content(root).Descendants("ArticlePage").OrderBy("CreateDate desc").Take(limit);	
+}
+
+<div class="@cssClass">
+    <ul class="list">
+        @foreach (var article in articles)
+        {
+            <li class="article">
+                <h1 class="title">
+                    <a href="@article.Url" title="@article.Name">@article.Name</a>
+                </h1>
+
+                @if (tagPage != null)
+                {
+                    @BlogHelper.GetTags(article)
+                }
+
+                @article.Introduction
+            </li>
+        }
+    </ul>
+</div>]]>
+      </Content>
+      <IsMacroPartial>True</IsMacroPartial>
+    </PartialView>
+    <PartialView>
+      <Path>ArticleNavigation.cshtml</Path>
+      <Content>
+        <![CDATA[
+@inherits Umbraco.Web.Macros.PartialViewMacroPage
+
+@if (CurrentPage.ContentType.Alias == "ArticlePage")
+{
+	<ul class="article-navigation">
+		<li>
+			@if (CurrentPage.Previous() != null)
+            {
+                <a href="@CurrentPage.Previous().Url" title="@CurrentPage.Previous().Name">Previous Article</a>
+            }
+		</li>
+		<li>
+			@if (CurrentPage.Next() != null)
+            {
+                <a href="@CurrentPage.Next().Url" title="@CurrentPage.Next().Name">Next Article</a>
+            }
+		</li>
+	</ul>
+}]]>
+      </Content>
+      <IsMacroPartial>True</IsMacroPartial>
+    </PartialView>
+  </PartialViews>
+  <Macros>
+    <Macro>
+      <Name>Latest Articles</Name>
+      <Alias>LatestArticles</Alias>
+      <ScriptPath>~/Views/MacroPartials/LatestArticles.cshtml</ScriptPath>
+      <ControlAssembly></ControlAssembly>
+      <XsltPath></XsltPath>
+      <ControlType></ControlType>
+      <UseInEditor>True</UseInEditor>
+      <CacheByMember>False</CacheByMember>
+      <CacheByPage>True</CacheByPage>
+      <CacheDuration>60</CacheDuration>
+      <Properties>
+        <Property>
+          <Name>Css Class</Name>
+          <Alias>CssClass</Alias>
+          <Type>Umbraco.Textbox</Type>
+        </Property>
+        <Property>
+          <Name>Limit</Name>
+          <Alias>Limit</Alias>
+          <Type>Umbraco.Integer</Type>
+        </Property>
+        <Property>
+          <Name>Root</Name>
+          <Alias>Root</Alias>
+          <Type>Umbraco.ContentPickerAlias</Type>
+        </Property>
+        <Property>
+          <Name>Tag Page</Name>
+          <Alias>TagPage</Alias>
+          <Type>Umbraco.ContentPickerAlias</Type>
+        </Property>
+      </Properties>
+    </Macro>
+    <Macro>
+      <Name>Article Navigation</Name>
+      <Alias>ArticleNavigation</Alias>
+      <ScriptPath>~/Views/MacroPartials/ArticleNavigation.cshtml</ScriptPath>
+      <ControlAssembly></ControlAssembly>
+      <XsltPath></XsltPath>
+      <ControlType></ControlType>
+      <UseInEditor>True</UseInEditor>
+      <CacheByMember>False</CacheByMember>
+      <CacheByPage>True</CacheByPage>
+      <CacheDuration>60</CacheDuration>
+      <Properties />
+    </Macro>
+  </Macros>
+  <DataTypes>
+    <DataType>
+      <Name>Article - Image Size - Dropdown list</Name>
+      <Type>Umbraco.DropDown</Type>
+      <DatabaseType>Nvarchar</DatabaseType>
+      <PreValues>
+        <PreValue>
+          <Alias>0</Alias>
+          <Value>600</Value>
+        </PreValue>
+        <PreValue>
+          <Alias>1</Alias>
+          <Value>700</Value>
+        </PreValue>
+        <PreValue>
+          <Alias>2</Alias>
+          <Value>800</Value>
+        </PreValue>
+        <PreValue>
+          <Alias>3</Alias>
+          <Value>900</Value>
+        </PreValue>
+        <PreValue>
+          <Alias>4</Alias>
+          <Value>1000</Value>
+        </PreValue>
+        <PreValue>
+          <Alias>5</Alias>
+          <Value>1100</Value>
+        </PreValue>
+        <PreValue>
+          <Alias>6</Alias>
+          <Value>1200</Value>
+        </PreValue>
+      </PreValues>
+    </DataType>
+  </DataTypes>
+  <Stylesheets>
+    <Stylesheet>
+      <Name>gallery</Name>
+      <Content>
+        <![CDATA[
+/**
+ * Featherlight – ultra slim jQuery lightbox
+ * Version 1.4.1 - http://noelboss.github.io/featherlight/
+ *
+ * Copyright 2016, Noël Raoul Bossart (http://www.noelboss.com)
+ * MIT Licensed.
+**/
+@media all {
+	.featherlight {
+		display: none;
+
+		/* dimensions: spanning the background from edge to edge */
+		position:fixed;
+		top: 0; right: 0; bottom: 0; left: 0;
+		z-index: 2147483647; /* z-index needs to be >= elements on the site. */
+
+		/* position: centering content */
+		text-align: center;
+
+		/* insures that the ::before pseudo element doesn't force wrap with fixed width content; */
+		white-space: nowrap;
+
+		/* styling */
+		cursor: pointer;
+		background: #333;
+		/* IE8 "hack" for nested featherlights */
+		background: rgba(0, 0, 0, 0);
+	}
+
+	/* support for nested featherlights. Does not work in IE8 (use JS to fix) */
+	.featherlight:last-of-type {
+		background: rgba(0, 0, 0, 0.8);
+	}
+
+	.featherlight:before {
+		/* position: trick to center content vertically */
+		content: '';
+		display: inline-block;
+		height: 100%;
+		vertical-align: middle;
+		margin-right: -0.25em;
+	}
+
+	.featherlight .featherlight-content {
+		/* make content container for positioned elements (close button) */
+		position: relative;
+
+		/* position: centering vertical and horizontal */
+		text-align: left;
+		vertical-align: middle;
+		display: inline-block;
+
+		/* dimensions: cut off images */
+		overflow: auto;
+		padding: 25px 25px 0;
+		border-bottom: 25px solid transparent;
+
+		/* dimensions: handling large content */
+		margin-left: 5%;
+		margin-right: 5%;
+		max-height: 95%;
+
+		/* styling */
+		background: #fff;
+		cursor: auto;
+
+		/* reset white-space wrapping */
+		white-space: normal;
+	}
+
+	/* contains the content */
+	.featherlight .featherlight-inner {
+		/* make sure its visible */
+		display: block;
+	}
+
+	.featherlight .featherlight-close-icon {
+		/* position: centering vertical and horizontal */
+		position: absolute;
+		z-index: 9999;
+		top: 0;
+		right: 0;
+
+		/* dimensions: 25px x 25px */
+		line-height: 25px;
+		width: 25px;
+
+		/* styling */
+		cursor: pointer;
+		text-align: center;
+		font-family: Arial, sans-serif;
+		background: #fff; /* Set the background in case it overlaps the content */
+		background: rgba(255, 255, 255, 0.3);
+		color: #000;
+	}
+
+
+	.featherlight .featherlight-image {
+		/* styling */
+		width: 100%;
+	}
+
+
+	.featherlight-iframe .featherlight-content {
+		/* removed the border for image croping since iframe is edge to edge */
+		border-bottom: 0;
+		padding: 0;
+	}
+
+	.featherlight iframe {
+		/* styling */
+		border: none;
+	}
+}
+
+/* handling phones and small screens */
+@media only screen and (max-width: 1024px) {
+	.featherlight .featherlight-content {
+		/* dimensions: maximize lightbox with for small screens */
+		margin-left: 10px;
+		margin-right: 10px;
+		max-height: 98%;
+
+		padding: 10px 10px 0;
+		border-bottom: 10px solid transparent;
+	}
+}
+
+/* gallery */
+.gallery {
+  padding: 0;
+  list-style: none;
+  margin: 0 -5px;
+  margin-top: 72px;
+  margin-bottom: 72px;
+}
+.gallery:before, .gallery:after {
+  content: " ";
+  display: table;
+}
+.gallery:after {
+  clear: both;
+}
+.gallery li {
+  width: 50%;
+  float: left;
+  position: relative;
+}
+.gallery li:before {
+  content: "";
+  display: block;
+  padding-top: 100%;
+}
+.gallery li span {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  right: 5px;
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+.gallery li span img {
+  width: 100%;
+  height: auto;
+}
+.gallery a {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+        ]]>
+      </Content>
+    </Stylesheet>
+  </Stylesheets>
+</Configuration>
