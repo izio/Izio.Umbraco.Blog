@@ -41,7 +41,7 @@ module.exports = function (grunt) {
                     licenseUrl: "http://www.izio.co.uk/license/mit",
                     author: "Izio",
                     authorUrl: "http://www.izio.co.uk",
-                    readme: "Izio.",
+                    readme: "Izio Blog is adds two new content types and associated templates to create collections of articles to your site.",
                     outputName: name + "." + version + ".zip",
                     manifest: "package.xml"
                 }
